@@ -1,4 +1,4 @@
-package main
+package crypto
 
 import (
 	"crypto/rand"
@@ -45,6 +45,7 @@ func generateKeyPair() (*rsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
+// Сохранение приватного ключа в файл
 func SavePrivateKeyToFile(filepath string, privateKey *rsa.PrivateKey) error {
 	// Конвертация приватного ключа в формат PEM
 	privateKeyPEM := &pem.Block{
@@ -67,6 +68,7 @@ func SavePrivateKeyToFile(filepath string, privateKey *rsa.PrivateKey) error {
 	return nil
 }
 
+// Загрузка приватного ключа из файла
 func LoadPrivateKeyFromFile(filepath string) (*rsa.PrivateKey, error) {
 	privateKeyBytes, err := ioutil.ReadFile(filepath)
 	if err != nil {
@@ -98,42 +100,4 @@ func GenerateAddress(publicKey *rsa.PublicKey) string {
 	}
 	hash := sha256.Sum256(publicKeyBytes)
 	return hex.EncodeToString(hash[:])
-}
-
-// Отправка монет другому пользователю
-func (w *Wallet) SendCoins(recipientPublicKey *rsa.PublicKey, amount int) error {
-	// Генерация адреса отправителя
-	senderAddress := GenerateAddress(w.PublicKey)
-
-	// Генерация адреса получателя
-	recipientAddress := GenerateAddress(recipientPublicKey)
-
-	// Проверка достаточности баланса отправителя
-	if w.Balance < amount {
-		return fmt.Errorf("insufficient funds")
-	}
-
-	// Создание транзакции
-	tx := &Transaction{
-		SenderAddress:    senderAddress,
-		RecipientAddress: recipientAddress,
-		Amount:           amount,
-	}
-
-	// Подписание транзакции
-	err := tx.Sign(w.PrivateKey)
-	if err != nil {
-		return fmt.Errorf("failed to sign transaction: %v", err)
-	}
-
-	// Добавление транзакции в блокчейн
-	err = AddTransactionToBlockchain(tx)
-	if err != nil {
-		return fmt.Errorf("failed to add transaction to blockchain: %v", err)
-	}
-
-	// Обновление баланса отправителя
-	w.Balance -= amount
-
-	return nil
 }
