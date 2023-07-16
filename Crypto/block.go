@@ -62,7 +62,7 @@ func (b *Block) CalculateHash() string {
 }
 
 // Создание генезис-блока
-func CreateGenesisBlock1() *Block {
+func CreateGenesisBlock() *Block {
 	return NewBlock(0, "Genesis Block", "")
 }
 
