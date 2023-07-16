@@ -15,7 +15,7 @@ import (
 
 // Структура кошелька
 type Wallet struct {
-	ID         int
+	WalletID         int
 	PrivateKey *rsa.PrivateKey
 	PublicKey  *rsa.PublicKey
 	Balance    int
