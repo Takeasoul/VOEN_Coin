@@ -11,7 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"sync"
-)
+) 
 
 var (
 	lastWalletID int
