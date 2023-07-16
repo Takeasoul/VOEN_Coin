@@ -8,18 +8,13 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
-	"sync"
 	"fmt"
 	"io/ioutil"
 	"os"
 )
-var (
-	lastWalletID int
-	idMutex      sync.Mutex
-)
+
 // Структура кошелька
 type Wallet struct {
-	WalletID         int
 	PrivateKey *rsa.PrivateKey
 	PublicKey  *rsa.PublicKey
 	Balance    int
@@ -27,11 +22,6 @@ type Wallet struct {
 
 // Создание нового кошелька
 func NewWallet() (*Wallet, error) {
-	idMutex.Lock()
-	lastWalletID++
-	newWalletID := lastWalletID
-	idMutex.Unlock()
-
 	privateKey, err := generateKeyPair()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate private key: %v", err)
@@ -39,7 +29,6 @@ func NewWallet() (*Wallet, error) {
 
 	publicKey := &privateKey.PublicKey
 	wallet := &Wallet{
-		WalletID:   newWalletID,
 		PrivateKey: privateKey,
 		PublicKey:  publicKey,
 		Balance:    0,
@@ -47,6 +36,7 @@ func NewWallet() (*Wallet, error) {
 
 	return wallet, nil
 }
+
 func generateKeyPair() (*rsa.PrivateKey, error) {
 	// Генерация приватного ключа
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
