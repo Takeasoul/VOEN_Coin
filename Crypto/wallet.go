@@ -69,6 +69,22 @@ func SavePrivateKeyToFile(filepath string, privateKey *rsa.PrivateKey) error {
 }
 
 // Загрузка приватного ключа из файла
+
+
+func GetPublicKeyFromPrivateKey(privateKey *rsa.PrivateKey) (*rsa.PublicKey, error) {
+	publicKey := &privateKey.PublicKey
+	return publicKey, nil
+}
+
+func GenerateAddress(publicKey *rsa.PublicKey) string {
+	publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
+	if err != nil {
+		return ""
+	}
+	hash := sha256.Sum256(publicKeyBytes)
+	return hex.EncodeToString(hash[:])
+}
+
 func LoadPrivateKeyFromFile(filepath string) (*rsa.PrivateKey, error) {
 	privateKeyBytes, err := ioutil.ReadFile(filepath)
 	if err != nil {
@@ -86,18 +102,4 @@ func LoadPrivateKeyFromFile(filepath string) (*rsa.PrivateKey, error) {
 	}
 
 	return privateKey, nil
-}
-
-func GetPublicKeyFromPrivateKey(privateKey *rsa.PrivateKey) (*rsa.PublicKey, error) {
-	publicKey := &privateKey.PublicKey
-	return publicKey, nil
-}
-
-func GenerateAddress(publicKey *rsa.PublicKey) string {
-	publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
-	if err != nil {
-		return ""
-	}
-	hash := sha256.Sum256(publicKeyBytes)
-	return hex.EncodeToString(hash[:])
 }
