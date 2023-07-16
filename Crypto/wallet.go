@@ -10,9 +10,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sync"
+)
+
+var (
+	lastWalletID int
+	idMutex      sync.Mutex
 )
 
 type Wallet struct {
+	WalletID   int
 	PrivateKey *rsa.PrivateKey
 	PublicKey  *rsa.PublicKey
 	Balance    int
@@ -20,6 +27,11 @@ type Wallet struct {
 
 // Создание нового кошелька
 func NewWallet() (*Wallet, error) {
+	idMutex.Lock()
+	lastWalletID++
+	newWalletID := lastWalletID
+	idMutex.Unlock()
+
 	privateKey, err := generateKeyPair()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate private key: %v", err)
@@ -27,6 +39,7 @@ func NewWallet() (*Wallet, error) {
 
 	publicKey := &privateKey.PublicKey
 	wallet := &Wallet{
+		WalletID:   newWalletID,
 		PrivateKey: privateKey,
 		PublicKey:  publicKey,
 		Balance:    0,
