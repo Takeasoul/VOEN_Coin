@@ -1,5 +1,3 @@
-// wallet.go
-
 package main
 
 import (
@@ -100,4 +98,42 @@ func GenerateAddress(publicKey *rsa.PublicKey) string {
 	}
 	hash := sha256.Sum256(publicKeyBytes)
 	return hex.EncodeToString(hash[:])
+}
+
+// Отправка монет другому пользователю
+func (w *Wallet) SendCoins(recipientPublicKey *rsa.PublicKey, amount int) error {
+	// Генерация адреса отправителя
+	senderAddress := GenerateAddress(w.PublicKey)
+
+	// Генерация адреса получателя
+	recipientAddress := GenerateAddress(recipientPublicKey)
+
+	// Проверка достаточности баланса отправителя
+	if w.Balance < amount {
+		return fmt.Errorf("insufficient funds")
+	}
+
+	// Создание транзакции
+	tx := &Transaction{
+		SenderAddress:    senderAddress,
+		RecipientAddress: recipientAddress,
+		Amount:           amount,
+	}
+
+	// Подписание транзакции
+	err := tx.Sign(w.PrivateKey)
+	if err != nil {
+		return fmt.Errorf("failed to sign transaction: %v", err)
+	}
+
+	// Добавление транзакции в блокчейн
+	err = AddTransactionToBlockchain(tx)
+	if err != nil {
+		return fmt.Errorf("failed to add transaction to blockchain: %v", err)
+	}
+
+	// Обновление баланса отправителя
+	w.Balance -= amount
+
+	return nil
 }
