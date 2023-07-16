@@ -1,7 +1,8 @@
-package crypto
+// wallet.go
+
+package main
 
 import (
-	_ "crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -13,7 +14,6 @@ import (
 	"os"
 )
 
-// Структура кошелька
 type Wallet struct {
 	PrivateKey *rsa.PrivateKey
 	PublicKey  *rsa.PublicKey
@@ -44,6 +44,10 @@ func generateKeyPair() (*rsa.PrivateKey, error) {
 		return nil, fmt.Errorf("failed to generate private key: %v", err)
 	}
 
+	return privateKey, nil
+}
+
+func SavePrivateKeyToFile(filepath string, privateKey *rsa.PrivateKey) error {
 	// Конвертация приватного ключа в формат PEM
 	privateKeyPEM := &pem.Block{
 		Type:  "RSA PRIVATE KEY",
@@ -51,44 +55,22 @@ func generateKeyPair() (*rsa.PrivateKey, error) {
 	}
 
 	// Запись приватного ключа в файл
-	privateKeyFile, err := os.Create("private.pem")
+	privateKeyFile, err := os.Create(filepath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create private key file: %v", err)
+		return fmt.Errorf("failed to create private key file: %v", err)
 	}
 	defer privateKeyFile.Close()
+
 	err = pem.Encode(privateKeyFile, privateKeyPEM)
 	if err != nil {
-		return nil, fmt.Errorf("failed to write private key to file: %v", err)
+		return fmt.Errorf("failed to write private key to file: %v", err)
 	}
 
-	return privateKey, nil
+	return nil
 }
 
-// Получение публичного ключа из приватного
-func getPublicKeyFromPrivateKey(privateKey *rsa.PrivateKey) (*rsa.PublicKey, error) {
-	publicKey := &privateKey.PublicKey
-	return publicKey, nil
-}
-
-// Генерация адреса на основе публичного ключа
-func generateAddress(publicKey *rsa.PublicKey) string {
-	publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
-	if err != nil {
-		return ""
-	}
-	hash := sha256.Sum256(publicKeyBytes)
-	return hex.EncodeToString(hash[:])
-}
-
-// Загрузка приватного ключа из файла
 func LoadPrivateKeyFromFile(filepath string) (*rsa.PrivateKey, error) {
-	privateKeyFile, err := os.Open(filepath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open private key file: %v", err)
-	}
-	defer privateKeyFile.Close()
-
-	privateKeyBytes, err := ioutil.ReadFile("private.pem")
+	privateKeyBytes, err := ioutil.ReadFile(filepath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read private key file: %v", err)
 	}
@@ -106,67 +88,16 @@ func LoadPrivateKeyFromFile(filepath string) (*rsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
-// Отправка монет другому пользователю
-func (bc *Blockchain) SendCoins(senderPrivateKey *rsa.PrivateKey, recipientAddress string, amount int) error {
-	// Получение адреса отправителя
-	senderPublicKey, err := getPublicKeyFromPrivateKey(senderPrivateKey)
+func GetPublicKeyFromPrivateKey(privateKey *rsa.PrivateKey) (*rsa.PublicKey, error) {
+	publicKey := &privateKey.PublicKey
+	return publicKey, nil
+}
+
+func GenerateAddress(publicKey *rsa.PublicKey) string {
+	publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
 	if err != nil {
-		return fmt.Errorf("failed to get public key from private key: %v", err)
+		return ""
 	}
-	senderAddress := generateAddress(senderPublicKey)
-
-	// Проверка доступных средств у отправителя
-	tx := &Transaction{
-		Inputs:  []TxInput{},
-		Outputs: []TxOutput{},
-	}
-	totalAmount := 0
-	for id, amount := range bc.UTXOSet {
-		tx.Inputs = append(tx.Inputs, TxInput{
-			TxID:    id,
-			Index:   0,
-			Address: senderAddress,
-		})
-		totalAmount += amount
-		if totalAmount >= amount {
-			break
-		}
-	}
-	if totalAmount < amount {
-		return fmt.Errorf("insufficient funds")
-	}
-
-	// Создание выхода для получателя
-	tx.Outputs = append(tx.Outputs, TxOutput{
-		Address: recipientAddress,
-		Amount:  amount,
-	})
-
-	// Создание выхода для отправителя (сдача)
-	changeAmount := totalAmount - amount
-	if changeAmount > 0 {
-		tx.Outputs = append(tx.Outputs, TxOutput{
-			Address: senderAddress,
-			Amount:  changeAmount,
-		})
-	}
-
-	// Установка идентификатора транзакции и подписи
-	tx.SetID()
-	err = tx.Sign(senderPrivateKey)
-	if err != nil {
-		return fmt.Errorf("failed to sign transaction: %v", err)
-	}
-
-	// Верификация подписи
-	err = tx.Verify(senderPublicKey)
-	if err != nil {
-		return fmt.Errorf("failed to verify transaction signature: %v", err)
-	}
-
-	// Добавление транзакции в цепочку
-	bc.AddUTXO(tx)
-	bc.Blocks[len(bc.Blocks)-1].Data = fmt.Sprintf("Transaction %s", tx.ID)
-
-	return nil
+	hash := sha256.Sum256(publicKeyBytes)
+	return hex.EncodeToString(hash[:])
 }
