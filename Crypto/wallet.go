@@ -19,7 +19,7 @@ var (
 )
 
 type Wallet struct {
-	WalletID   int
+	ID   int
 	PrivateKey *rsa.PrivateKey
 	PublicKey  *rsa.PublicKey
 	Balance    int
@@ -39,7 +39,7 @@ func NewWallet() (*Wallet, error) {
 
 	publicKey := &privateKey.PublicKey
 	wallet := &Wallet{
-		WalletID:   newWalletID,
+		ID:   newWalletID,
 		PrivateKey: privateKey,
 		PublicKey:  publicKey,
 		Balance:    0,
